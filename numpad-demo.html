@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
-  <title>Number Pad Demo</title>
+  <title>Input Demo</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -17,237 +17,260 @@
       align-items: center;
       justify-content: center;
       padding: 24px;
-      gap: 20px;
+      gap: 32px;
     }
 
-    h2 { font-size: 1rem; color: #7070a0; text-transform: uppercase; letter-spacing: 1px; }
+    h2 { font-size: 0.8rem; color: #7070a0; text-transform: uppercase; letter-spacing: 1.5px; }
 
-    /* ── FIELD ── */
     .demo-fields {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 12px;
+      gap: 14px;
       width: 100%;
       max-width: 320px;
     }
 
-    .field-group { display: flex; flex-direction: column; gap: 6px; }
+    .field-group { display: flex; flex-direction: column; gap: 6px; align-items: center; }
 
     .field-label {
       font-size: 0.72rem;
       text-transform: uppercase;
       letter-spacing: 0.8px;
       color: #7070a0;
+      align-self: flex-start;
     }
 
-    .num-field {
-      background: #161628;
-      border: 2px solid #252545;
-      border-radius: 12px;
-      padding: 16px;
-      text-align: center;
-      font-size: 2rem;
-      font-weight: 800;
-      color: #fff;
-      cursor: pointer;
-      transition: border-color 0.15s;
-      user-select: none;
-      -webkit-tap-highlight-color: transparent;
-    }
-
-    .num-field:active, .num-field.active { border-color: #e94560; color: #e94560; }
-
-    /* ── NUMPAD OVERLAY ── */
-    .numpad-overlay {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.6);
-      z-index: 100;
-      align-items: flex-end;
-      justify-content: center;
-    }
-
-    .numpad-overlay.open { display: flex; }
-
-    .numpad-sheet {
-      background: #161628;
-      border-radius: 24px 24px 0 0;
-      border: 1px solid #252545;
-      border-bottom: none;
-      width: 100%;
-      max-width: 420px;
-      padding: 16px 16px 32px;
-      animation: slideUp 0.22s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-    }
-
-    @keyframes slideUp {
-      from { transform: translateY(100%); }
-      to   { transform: translateY(0); }
-    }
-
-    .numpad-handle {
-      width: 40px;
-      height: 4px;
-      background: #252545;
-      border-radius: 2px;
-      margin: 0 auto 16px;
-    }
-
-    .numpad-header {
+    /* ── PICKER WIDGET ── */
+    .picker-widget {
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      margin-bottom: 16px;
-      padding: 0 4px;
-    }
-
-    .numpad-title {
-      font-size: 0.8rem;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      color: #7070a0;
-    }
-
-    .numpad-display {
-      font-size: 2rem;
-      font-weight: 800;
-      color: #e94560;
-      min-width: 40px;
-      text-align: right;
-    }
-
-    .numpad-grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
       gap: 8px;
+      background: #161628;
+      border: 2px solid #252545;
+      border-radius: 14px;
+      padding: 10px 10px;
+      width: 100%;
+      transition: border-color 0.15s;
     }
 
-    .np-btn {
+    .picker-widget.focused { border-color: #e94560; }
+
+    /* +/- buttons */
+    .pm-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
       background: #252545;
       border: none;
-      border-radius: 12px;
-      color: #fff;
+      color: #aaa;
       font-size: 1.3rem;
-      font-weight: 700;
-      height: 60px;
       cursor: pointer;
-      transition: background 0.1s, transform 0.08s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: background 0.1s, color 0.1s, transform 0.08s;
+      -webkit-tap-highlight-color: transparent;
       font-family: inherit;
+    }
+
+    .pm-btn:active { background: #e94560; color: #fff; transform: scale(0.88); }
+
+    /* vertical drum */
+    .drum-wrap {
+      flex: 1;
+      height: 80px;
+      overflow: hidden;
+      position: relative;
+      cursor: grab;
+      touch-action: none;
       -webkit-tap-highlight-color: transparent;
     }
 
-    .np-btn:active { background: #353565; transform: scale(0.93); }
+    .drum-wrap:active { cursor: grabbing; }
 
-    .np-btn.selected {
-      background: #e94560;
-      color: #fff;
+    /* fade top & bottom */
+    .drum-wrap::before,
+    .drum-wrap::after {
+      content: '';
+      position: absolute;
+      left: 0; right: 0;
+      height: 28px;
+      z-index: 2;
+      pointer-events: none;
     }
 
-    .np-btn.confirm {
-      background: #e94560;
-      color: #fff;
-      font-size: 1rem;
-      letter-spacing: 0.5px;
+    .drum-wrap::before { top: 0; background: linear-gradient(to bottom, #161628, transparent); }
+    .drum-wrap::after  { bottom: 0; background: linear-gradient(to top, #161628, transparent); }
+
+    /* center highlight bar */
+    .drum-center {
+      position: absolute;
+      left: 0; right: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      height: 32px;
+      border-top: 1px solid #e94560;
+      border-bottom: 1px solid #e94560;
+      pointer-events: none;
+      z-index: 1;
     }
 
-    .np-btn.confirm:active { background: #c73a52; }
+    .drum-track {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      will-change: transform;
+    }
 
-    .np-btn.nil-val {
-      background: #1a1a35;
-      color: #7070a0;
-      font-size: 0.75rem;
-      letter-spacing: 0.3px;
+    .drum-item {
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: #444466;
+      transition: color 0.15s, font-size 0.15s;
+      user-select: none;
+      width: 100%;
+    }
+
+    .drum-item.active {
+      color: #fff;
+      font-size: 1.6rem;
     }
   </style>
 </head>
 <body>
 
-<h2>Tap a field</h2>
+<h2>Swipe or tap ＋ / －</h2>
 
 <div class="demo-fields">
   <div class="field-group">
     <div class="field-label">Bid</div>
-    <div class="num-field" onclick="openPad('Bid', this)">0</div>
+    <div class="picker-widget" id="pw-bid">
+      <button class="pm-btn" data-target="bid" data-delta="-1">−</button>
+      <div class="drum-wrap" id="drum-bid">
+        <div class="drum-center"></div>
+        <div class="drum-track" id="track-bid"></div>
+      </div>
+      <button class="pm-btn" data-target="bid" data-delta="1">＋</button>
+    </div>
   </div>
   <div class="field-group">
     <div class="field-label">Tricks Won</div>
-    <div class="num-field" onclick="openPad('Tricks Won', this)">0</div>
-  </div>
-</div>
-
-<!-- Numpad -->
-<div class="numpad-overlay" id="numpadOverlay" onclick="handleOverlayClick(event)">
-  <div class="numpad-sheet">
-    <div class="numpad-handle"></div>
-    <div class="numpad-header">
-      <span class="numpad-title" id="numpadTitle">Bid</span>
-      <span class="numpad-display" id="numpadDisplay">0</span>
+    <div class="picker-widget" id="pw-tricks">
+      <button class="pm-btn" data-target="tricks" data-delta="-1">−</button>
+      <div class="drum-wrap" id="drum-tricks">
+        <div class="drum-center"></div>
+        <div class="drum-track" id="track-tricks"></div>
+      </div>
+      <button class="pm-btn" data-target="tricks" data-delta="1">＋</button>
     </div>
-    <div class="numpad-grid" id="numpadGrid"></div>
   </div>
 </div>
 
 <script>
-  let activeField = null;
-  let selectedVal = 0;
+  const MAX = 13;
+  const ITEM_H = 32;
 
-  function buildGrid(current) {
-    const grid = document.getElementById('numpadGrid');
-    grid.innerHTML = '';
-    // 0–13 = 14 values, fill to 16 with Nil + Done
-    for (let i = 0; i <= 13; i++) {
-      const btn = document.createElement('button');
-      btn.className = 'np-btn' + (i === current ? ' selected' : '');
-      btn.textContent = i;
-      btn.onclick = () => selectVal(i);
-      grid.appendChild(btn);
-    }
-    // slot 14: Nil shortcut
-    const nilBtn = document.createElement('button');
-    nilBtn.className = 'np-btn nil-val';
-    nilBtn.textContent = 'Nil (0)';
-    nilBtn.onclick = () => selectVal(0);
-    grid.appendChild(nilBtn);
+  const drums = {
+    bid:    { value: 0, track: null, wrap: null, widget: null },
+    tricks: { value: 0, track: null, wrap: null, widget: null }
+  };
 
-    // slot 15: Done
-    const doneBtn = document.createElement('button');
-    doneBtn.className = 'np-btn confirm';
-    doneBtn.textContent = 'Done ✓';
-    doneBtn.onclick = confirm;
-    grid.appendChild(doneBtn);
+  function vibrate() {
+    if (navigator.vibrate) navigator.vibrate(18);
   }
 
-  function selectVal(v) {
-    selectedVal = v;
-    document.getElementById('numpadDisplay').textContent = v;
-    document.querySelectorAll('.np-btn').forEach(b => {
-      b.classList.toggle('selected', b.textContent == v && !b.classList.contains('nil-val') && !b.classList.contains('confirm'));
+  function buildDrum(key) {
+    const d = drums[key];
+    d.track  = document.getElementById('track-' + key);
+    d.wrap   = document.getElementById('drum-' + key);
+    d.widget = document.getElementById('pw-' + key);
+    d.track.innerHTML = '';
+
+    // padding items above and below so first/last can center
+    const pad = 2;
+    for (let i = -pad; i <= MAX + pad; i++) {
+      const el = document.createElement('div');
+      el.className = 'drum-item';
+      el.textContent = i < 0 ? '' : i > MAX ? '' : i;
+      d.track.appendChild(el);
+    }
+    d.pad = pad;
+    setDrumValue(key, d.value, false);
+  }
+
+  function setDrumValue(key, val, vib = true) {
+    const d = drums[key];
+    val = Math.max(0, Math.min(MAX, val));
+    d.value = val;
+
+    // center offset: wrap height / 2 - ITEM_H/2 - val * ITEM_H
+    const wrapH = d.wrap.clientHeight || 80;
+    const offset = (wrapH / 2) - (ITEM_H / 2) - (val + d.pad) * ITEM_H;
+    d.track.style.transition = vib ? 'transform 0.18s cubic-bezier(0.25,0.46,0.45,0.94)' : 'none';
+    d.track.style.transform  = `translateY(${offset}px)`;
+
+    // update active class
+    d.track.querySelectorAll('.drum-item').forEach((el, i) => {
+      el.classList.toggle('active', i === val + d.pad);
     });
+
+    if (vib) vibrate();
   }
 
-  function openPad(label, fieldEl) {
-    activeField = fieldEl;
-    selectedVal = parseInt(fieldEl.textContent) || 0;
-    document.getElementById('numpadTitle').textContent = label;
-    document.getElementById('numpadDisplay').textContent = selectedVal;
-    buildGrid(selectedVal);
-    document.getElementById('numpadOverlay').classList.add('open');
-    fieldEl.classList.add('active');
-  }
+  // ── SWIPE LOGIC ──────────────────────────────────────────
+  function attachSwipe(key) {
+    const d = drums[key];
+    let startY = 0, lastY = 0, startVal = 0, dragging = false;
 
-  function confirm() {
-    if (activeField) {
-      activeField.textContent = selectedVal;
-      activeField.classList.remove('active');
+    function onStart(e) {
+      dragging = true;
+      startY = lastY = e.touches ? e.touches[0].clientY : e.clientY;
+      startVal = d.value;
+      d.widget.classList.add('focused');
+      d.track.style.transition = 'none';
     }
-    document.getElementById('numpadOverlay').classList.remove('open');
-    activeField = null;
+
+    function onMove(e) {
+      if (!dragging) return;
+      e.preventDefault();
+      const y = e.touches ? e.touches[0].clientY : e.clientY;
+      const dy = startY - y;
+      const newVal = Math.round(startVal + dy / ITEM_H);
+      if (newVal !== d.value) setDrumValue(key, newVal);
+      lastY = y;
+    }
+
+    function onEnd() {
+      if (!dragging) return;
+      dragging = false;
+      d.widget.classList.remove('focused');
+      setDrumValue(key, d.value); // snap
+    }
+
+    d.wrap.addEventListener('touchstart',  onStart, { passive: true });
+    d.wrap.addEventListener('touchmove',   onMove,  { passive: false });
+    d.wrap.addEventListener('touchend',    onEnd);
+    d.wrap.addEventListener('mousedown',   onStart);
+    window.addEventListener('mousemove',   onMove);
+    window.addEventListener('mouseup',     onEnd);
   }
 
-  function handleOverlayClick(e) {
-    if (e.target === document.getElementById('numpadOverlay')) confirm();
-  }
+  // ── +/- BUTTONS ──────────────────────────────────────────
+  document.querySelectorAll('.pm-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const key   = btn.dataset.target;
+      const delta = parseInt(btn.dataset.delta);
+      setDrumValue(key, drums[key].value + delta);
+    });
+  });
+
+  // ── INIT ─────────────────────────────────────────────────
+  Object.keys(drums).forEach(k => { buildDrum(k); attachSwipe(k); });
 </script>
 </body>
 </html>

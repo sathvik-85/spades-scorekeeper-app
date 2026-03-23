@@ -1,0 +1,1550 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>Spades Scorekeeper</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:       #0d0d1a;
+      --surface:  #161628;
+      --border:   #252545;
+      --accent:   #e94560;
+      --accent2:  #4a9eff;
+      --text:     #eeeef5;
+      --muted:    #7070a0;
+      --success:  #27ae60;
+      --warn:     #f5a623;
+      --radius:   14px;
+    }
+
+    html { font-size: 16px; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100dvh;
+      overflow-x: hidden;
+    }
+
+    /* ── HEADER ─────────────────────────────── */
+    .app-header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+
+    .app-header h1 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--accent);
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+    }
+
+    .header-suits { font-size: 1.2rem; opacity: 0.5; }
+
+    /* ── SCREENS ────────────────────────────── */
+    .screen {
+      display: none;
+      min-height: calc(100dvh - 53px);
+      padding: 24px 16px 40px;
+      max-width: 480px;
+      margin: 0 auto;
+      animation: fadeIn 0.25s ease;
+    }
+
+    .screen.active { display: block; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── PROGRESS BAR ───────────────────────── */
+    .progress {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 28px;
+    }
+
+    .progress-dot {
+      height: 4px;
+      flex: 1;
+      background: var(--border);
+      border-radius: 2px;
+      transition: background 0.3s;
+    }
+
+    .progress-dot.done { background: var(--accent); }
+    .progress-dot.active { background: var(--accent); opacity: 0.5; }
+
+    /* ── HEADINGS ───────────────────────────── */
+    .screen-title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    .screen-sub {
+      font-size: 0.9rem;
+      color: var(--muted);
+      margin-bottom: 24px;
+    }
+
+    /* ── MODE CARDS ─────────────────────────── */
+    .mode-cards {
+      display: grid;
+      gap: 14px;
+    }
+
+    .mode-card {
+      background: var(--surface);
+      border: 2px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px 20px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      transition: border-color 0.15s, transform 0.1s;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .mode-card:active { transform: scale(0.98); }
+    .mode-card:hover,
+    .mode-card.selected { border-color: var(--accent); }
+
+    .mode-icon {
+      font-size: 2.2rem;
+      width: 52px;
+      height: 52px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--border);
+      border-radius: 10px;
+      flex-shrink: 0;
+    }
+
+    .mode-info h3 { font-size: 1.1rem; font-weight: 600; margin-bottom: 3px; }
+    .mode-info p  { font-size: 0.82rem; color: var(--muted); line-height: 1.4; }
+
+    /* ── COUNT PICKER ───────────────────────── */
+    .count-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 28px;
+    }
+
+    .count-btn {
+      aspect-ratio: 1;
+      background: var(--surface);
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: var(--text);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 2px;
+      transition: border-color 0.15s, background 0.15s;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .count-btn span { font-size: 0.65rem; color: var(--muted); font-weight: 400; text-transform: uppercase; letter-spacing: 0.5px; }
+    .count-btn:hover, .count-btn.selected { border-color: var(--accent); background: #1e0d14; }
+
+    /* ── NAME INPUTS ────────────────────────── */
+    .names-list { display: flex; flex-direction: column; gap: 16px; margin-bottom: 28px; }
+
+    .name-group {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    .name-group-header {
+      padding: 12px 16px;
+      background: var(--border);
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .name-group-header .group-badge {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: white;
+      font-size: 0.7rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .name-input-row {
+      display: flex;
+      align-items: center;
+      padding: 4px 12px;
+      border-bottom: 1px solid var(--border);
+      gap: 10px;
+    }
+
+    .name-input-row:last-child { border-bottom: none; }
+
+    .name-input-row .row-label {
+      font-size: 0.8rem;
+      color: var(--muted);
+      width: 64px;
+      flex-shrink: 0;
+    }
+
+    .name-input-row input {
+      flex: 1;
+      padding: 12px 4px;
+      background: transparent;
+      border: none;
+      color: var(--text);
+      font-size: 1rem;
+      font-family: inherit;
+      min-width: 0;
+    }
+
+    .name-input-row input:focus { outline: none; }
+    .name-input-row input::placeholder { color: var(--muted); }
+
+    /* ── SETTINGS ───────────────────────────── */
+    .settings-list { display: flex; flex-direction: column; gap: 2px; margin-bottom: 28px; }
+
+    .setting-row {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 0;
+      padding: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .settings-list .setting-row:first-child { border-radius: var(--radius) var(--radius) 0 0; }
+    .settings-list .setting-row:last-child  { border-radius: 0 0 var(--radius) var(--radius); }
+    .settings-list .setting-row:only-child  { border-radius: var(--radius); }
+
+    .setting-label { font-size: 0.95rem; }
+    .setting-desc  { font-size: 0.78rem; color: var(--muted); margin-top: 2px; }
+
+    .setting-row input[type="number"],
+    .setting-row select {
+      width: 90px;
+      padding: 9px 10px;
+      background: var(--border);
+      border: 1px solid #353560;
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 1rem;
+      text-align: center;
+      font-family: inherit;
+      flex-shrink: 0;
+    }
+
+    .setting-row input:focus,
+    .setting-row select:focus { outline: none; border-color: var(--accent); }
+
+    /* ── BUTTONS ────────────────────────────── */
+    .btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 15px 20px;
+      border: none;
+      border-radius: 12px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+      font-family: inherit;
+      -webkit-tap-highlight-color: transparent;
+      width: 100%;
+    }
+
+    .btn:active { transform: scale(0.97); }
+
+    .btn-primary { background: var(--accent); color: white; }
+    .btn-primary:hover { background: #c73a52; }
+
+    .btn-secondary { background: var(--border); color: var(--text); }
+    .btn-secondary:hover { background: #353560; }
+
+    .btn-ghost { background: transparent; color: var(--muted); border: 1px solid var(--border); }
+    .btn-ghost:hover { color: var(--text); border-color: var(--muted); }
+
+    .btn-sm { padding: 10px 16px; font-size: 0.85rem; border-radius: 8px; width: auto; }
+
+    .btn-row { display: flex; gap: 10px; }
+    .btn-row .btn { flex: 1; }
+
+    /* ── GAME SCREEN ────────────────────────── */
+    #gameScreen { max-width: 600px; padding-top: 16px; }
+
+    /* ── CONFETTI CANVAS ────────────────────── */
+    #confettiCanvas {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 999;
+      display: none;
+    }
+
+    .winner-banner {
+      display: none;
+      background: linear-gradient(135deg, var(--accent), #c0392b);
+      border-radius: var(--radius);
+      padding: 18px;
+      text-align: center;
+      margin-bottom: 16px;
+      font-size: 1.2rem;
+      font-weight: 700;
+      animation: pulse 1.5s infinite;
+    }
+
+    /* ── WINNER POPUP ───────────────────────── */
+    .winner-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      z-index: 998;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .winner-overlay.open { display: flex; }
+
+    .winner-popup {
+      background: linear-gradient(160deg, #1e0d14 0%, #16213e 100%);
+      border: 2px solid var(--accent);
+      border-radius: 20px;
+      padding: 40px 32px 32px;
+      text-align: center;
+      width: 100%;
+      max-width: 340px;
+      animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      position: relative;
+      z-index: 999;
+    }
+
+    @keyframes popIn {
+      from { transform: scale(0.6); opacity: 0; }
+      to   { transform: scale(1);   opacity: 1; }
+    }
+
+    .winner-popup .spade-icon {
+      font-size: 3.5rem;
+      line-height: 1;
+      margin-bottom: 12px;
+      filter: drop-shadow(0 0 16px var(--accent));
+      animation: spinIn 0.5s ease 0.2s both;
+    }
+
+    @keyframes spinIn {
+      from { transform: rotate(-180deg) scale(0); opacity: 0; }
+      to   { transform: rotate(0deg) scale(1);    opacity: 1; }
+    }
+
+    .winner-popup .winner-label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    .winner-popup .winner-name {
+      font-size: 2rem;
+      font-weight: 800;
+      color: #fff;
+      margin-bottom: 4px;
+      word-break: break-word;
+    }
+
+    .winner-popup .winner-score {
+      font-size: 0.95rem;
+      color: var(--accent);
+      font-weight: 600;
+      margin-bottom: 28px;
+    }
+
+    .winner-popup .tie-text {
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: var(--warn);
+      margin-bottom: 8px;
+    }
+
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.82} }
+
+    /* Score strip */
+    .score-strip {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 16px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+    }
+
+    .score-strip::-webkit-scrollbar { display: none; }
+
+    .score-card {
+      background: var(--surface);
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 16px;
+      text-align: center;
+      flex: 1;
+      min-width: 100px;
+      transition: border-color 0.2s;
+      cursor: default;
+    }
+
+    .score-card.leading { border-color: var(--accent); }
+
+    .sc-name {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--muted);
+      margin-bottom: 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .sc-total {
+      font-size: 2rem;
+      font-weight: 800;
+      color: var(--accent);
+      line-height: 1.1;
+    }
+
+    .sc-bags { font-size: 0.75rem; color: var(--muted); margin-top: 3px; }
+    .sc-bags span { color: var(--warn); font-weight: 600; }
+
+    .sc-members {
+      font-size: 0.7rem;
+      color: var(--muted);
+      margin-top: 4px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* Round entry card */
+    .round-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      margin-bottom: 16px;
+      overflow: hidden;
+    }
+
+    .round-card-header {
+      padding: 13px 16px;
+      background: var(--border);
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .round-card-header strong { color: var(--text); }
+
+    .player-entry-row {
+      border-bottom: 1px solid var(--border);
+      padding: 14px 16px;
+    }
+
+    .player-entry-row:last-child { border-bottom: none; }
+
+    .per-name {
+      font-size: 0.95rem;
+      font-weight: 600;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .per-name .badge {
+      font-size: 0.65rem;
+      background: var(--border);
+      color: var(--muted);
+      padding: 2px 7px;
+      border-radius: 20px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .input-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .input-group { display: flex; flex-direction: column; gap: 5px; }
+
+    .input-group label {
+      font-size: 0.75rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .num-input {
+      display: flex;
+      align-items: center;
+      background: var(--border);
+      border: 1px solid #353560;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .num-input button {
+      width: 38px;
+      height: 44px;
+      background: transparent;
+      border: none;
+      color: var(--muted);
+      font-size: 1.2rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: color 0.1s, background 0.1s;
+      -webkit-tap-highlight-color: transparent;
+      flex-shrink: 0;
+    }
+
+    .num-input button:active { background: #353560; color: var(--text); }
+
+    .num-input input {
+      flex: 1;
+      text-align: center;
+      background: transparent;
+      border: none;
+      color: var(--text);
+      font-size: 1.15rem;
+      font-weight: 700;
+      font-family: inherit;
+      min-width: 0;
+      padding: 0;
+      height: 44px;
+      -webkit-appearance: none;
+      appearance: none;
+    }
+
+    .num-input input:focus { outline: none; }
+    .num-input input::-webkit-inner-spin-button,
+    .num-input input::-webkit-outer-spin-button { -webkit-appearance: none; }
+
+    .nil-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .nil-row label { font-size: 0.78rem; color: var(--muted); flex-shrink: 0; }
+
+    .nil-row select {
+      flex: 1;
+      padding: 9px 10px;
+      background: var(--border);
+      border: 1px solid #353560;
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 0.9rem;
+      font-family: inherit;
+    }
+
+    .nil-row select:focus { outline: none; border-color: var(--accent); }
+
+    .nil-tricks-row {
+      display: none;
+      align-items: center;
+      gap: 10px;
+      margin-top: 8px;
+    }
+
+    .nil-tricks-row label { font-size: 0.78rem; color: var(--muted); flex-shrink: 0; }
+
+    .action-bar {
+      display: flex;
+      gap: 10px;
+      padding: 14px 16px;
+      border-top: 1px solid var(--border);
+    }
+
+    /* History */
+    .history-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      margin-bottom: 40px;
+    }
+
+    .history-header {
+      padding: 13px 16px;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--muted);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .history-scroll { overflow-x: auto; }
+
+    table { width: 100%; border-collapse: collapse; min-width: 300px; }
+
+    thead th {
+      padding: 9px 10px;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.7px;
+      color: var(--muted);
+      background: var(--border);
+      text-align: center;
+      white-space: nowrap;
+    }
+
+    tbody tr { border-bottom: 1px solid #1a1a30; }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: #1a1a30; }
+
+    tbody td {
+      padding: 9px 10px;
+      font-size: 0.88rem;
+      text-align: center;
+    }
+
+    .td-round { color: var(--muted); font-size: 0.75rem; }
+    .td-score { font-weight: 700; }
+    .td-score.pos { color: var(--success); }
+    .td-score.neg { color: var(--accent); }
+    .td-total { font-weight: 700; color: var(--accent); }
+    .td-note { font-size: 0.72rem; color: var(--muted); font-style: italic; }
+
+    .empty-state {
+      padding: 32px 16px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    /* ── MODAL ──────────────────────────────── */
+    .overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.75);
+      z-index: 200;
+      align-items: flex-end;
+      justify-content: center;
+      padding: 16px;
+    }
+
+    .overlay.open { display: flex; }
+
+    .sheet {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      width: 100%;
+      max-width: 420px;
+      animation: slideUp 0.2s ease;
+    }
+
+    @keyframes slideUp {
+      from { transform: translateY(20px); opacity: 0; }
+      to   { transform: translateY(0);    opacity: 1; }
+    }
+
+    .sheet h3 { font-size: 1.1rem; margin-bottom: 16px; }
+
+    .sheet input[type="text"] {
+      width: 100%;
+      padding: 13px 14px;
+      background: var(--border);
+      border: 1px solid #353560;
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 1rem;
+      font-family: inherit;
+      margin-bottom: 14px;
+    }
+
+    .sheet input:focus { outline: none; border-color: var(--accent); }
+
+    /* Divider */
+    .section-gap { height: 24px; }
+  </style>
+</head>
+<body>
+
+<header class="app-header">
+  <h1>&#9824; Spades</h1>
+  <span class="header-suits">&#9824;&#9827;&#9829;&#9830;</span>
+</header>
+
+<!-- ══════════════════════════════════════════
+     SCREEN 1 · MODE
+══════════════════════════════════════════ -->
+<div class="screen active" id="screenMode">
+  <div class="progress">
+    <div class="progress-dot active"></div>
+    <div class="progress-dot"></div>
+    <div class="progress-dot"></div>
+    <div class="progress-dot"></div>
+  </div>
+
+  <p class="screen-title">How are you playing?</p>
+  <p class="screen-sub">Choose the format for this game</p>
+
+  <div class="mode-cards">
+    <div class="mode-card" onclick="selectMode('individual')" id="modeCardIndividual">
+      <div class="mode-icon">&#128100;</div>
+      <div class="mode-info">
+        <h3>Individual</h3>
+        <p>Each player scores on their own. Great for 2–6 players.</p>
+      </div>
+    </div>
+    <div class="mode-card" onclick="selectMode('teams')" id="modeCardTeams">
+      <div class="mode-icon">&#128101;</div>
+      <div class="mode-info">
+        <h3>Teams</h3>
+        <p>Players group into teams. Traditional Spades is 2 teams of 2.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     SCREEN 2 · COUNT
+══════════════════════════════════════════ -->
+<div class="screen" id="screenCount">
+  <div class="progress">
+    <div class="progress-dot done"></div>
+    <div class="progress-dot active"></div>
+    <div class="progress-dot"></div>
+    <div class="progress-dot"></div>
+  </div>
+
+  <p class="screen-title" id="countTitle">How many players?</p>
+  <p class="screen-sub" id="countSub">Tap to select</p>
+
+  <div class="count-grid" id="countGrid"></div>
+
+  <button class="btn btn-ghost" onclick="goTo('screenMode')">&#8592; Back</button>
+</div>
+
+<!-- ══════════════════════════════════════════
+     SCREEN 3 · NAMES
+══════════════════════════════════════════ -->
+<div class="screen" id="screenNames">
+  <div class="progress">
+    <div class="progress-dot done"></div>
+    <div class="progress-dot done"></div>
+    <div class="progress-dot active"></div>
+    <div class="progress-dot"></div>
+  </div>
+
+  <p class="screen-title" id="namesTitle">Enter names</p>
+  <p class="screen-sub">You can always rename during the game</p>
+
+  <div class="names-list" id="namesList"></div>
+
+  <div class="btn-row" style="margin-bottom:12px">
+    <button class="btn btn-primary" onclick="goToSettings()">Continue &#8594;</button>
+  </div>
+  <button class="btn btn-ghost" onclick="goTo('screenCount')">&#8592; Back</button>
+</div>
+
+<!-- ══════════════════════════════════════════
+     SCREEN 4 · SETTINGS
+══════════════════════════════════════════ -->
+<div class="screen" id="screenSettings">
+  <div class="progress">
+    <div class="progress-dot done"></div>
+    <div class="progress-dot done"></div>
+    <div class="progress-dot done"></div>
+    <div class="progress-dot active"></div>
+  </div>
+
+  <p class="screen-title">Game settings</p>
+  <p class="screen-sub">These can be changed later</p>
+
+  <div class="settings-list">
+    <div class="setting-row">
+      <div>
+        <div class="setting-label">Rounds</div>
+        <div class="setting-desc">Game ends after this many rounds</div>
+      </div>
+      <input type="number" id="cfgRounds" value="13" min="1" max="13" />
+    </div>
+    <div class="setting-row">
+      <div>
+        <div class="setting-label">Bag Penalty At</div>
+        <div class="setting-desc">Lose 100 pts every N bags</div>
+      </div>
+      <input type="number" id="cfgBagLimit" value="10" min="5" max="20" />
+    </div>
+  </div>
+
+  <div class="btn-row" style="margin-bottom:12px">
+    <button class="btn btn-primary" onclick="startGame()">Start Game &#9824;</button>
+  </div>
+  <button class="btn btn-ghost" onclick="goTo('screenNames')">&#8592; Back</button>
+</div>
+
+<!-- ══════════════════════════════════════════
+     SCREEN 5 · GAME
+══════════════════════════════════════════ -->
+<div class="screen" id="gameScreen">
+
+  <!-- Winner -->
+  <div class="winner-banner" id="winnerBanner"></div>
+
+  <!-- Score strip -->
+  <div class="score-strip" id="scoreStrip"></div>
+
+  <!-- Round entry -->
+  <div class="round-card" id="roundCard">
+    <div class="round-card-header">
+      Round <strong id="roundNum">1</strong> of <strong id="totalRoundsDisplay">13</strong>
+      <span id="gameSettingsInfo" style="font-size:0.75rem"></span>
+    </div>
+    <div id="entryRows"></div>
+    <div class="action-bar">
+      <button class="btn btn-primary" onclick="addRound()" style="flex:2">Add Round</button>
+      <button class="btn btn-secondary btn-sm" onclick="undoRound()" title="Undo last round" style="flex:1;min-width:0">&#8617; Undo</button>
+      <button class="btn btn-ghost btn-sm" onclick="confirmNewGame()" style="flex:1;min-width:0">&#8635; New</button>
+    </div>
+  </div>
+
+  <!-- History -->
+  <div class="history-card">
+    <div class="history-header">
+      Round History
+      <span id="historyCount"></span>
+    </div>
+    <div class="history-scroll">
+      <div id="historyBody"><div class="empty-state">No rounds yet — add the first one above.</div></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ══════════════════════════════════════════
+     WINNER POPUP
+══════════════════════════════════════════ -->
+<div class="winner-overlay" id="winnerOverlay">
+  <div class="winner-popup">
+    <div class="spade-icon">&#9824;</div>
+    <div id="winnerPopupContent"></div>
+    <button class="btn btn-primary" onclick="confirmNewGame()" style="margin-top:4px">
+      &#8635; New Game
+    </button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     SETTINGS MODAL (in-game)
+══════════════════════════════════════════ -->
+<div class="overlay" id="settingsOverlay">
+  <div class="sheet">
+    <h3>Game Settings</h3>
+    <div class="settings-list" style="margin-bottom:16px">
+      <div class="setting-row">
+        <div><div class="setting-label">Rounds</div></div>
+        <input type="number" id="liveRounds" value="13" min="1" max="13" />
+      </div>
+      <div class="setting-row">
+        <div><div class="setting-label">Bag Penalty At</div></div>
+        <input type="number" id="liveBagLimit" value="10" min="5" max="20" />
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="saveGameSettings()">Save</button>
+      <button class="btn btn-secondary" onclick="closeOverlay('settingsOverlay')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─────────────────────────────────────────────────────────────
+// SETUP STATE
+// ─────────────────────────────────────────────────────────────
+const setup = {
+  mode: null,       // 'individual' | 'teams'
+  count: null,      // number of players or teams
+  entities: [],     // [{name, members:[]}]  members only for teams
+};
+
+// ─────────────────────────────────────────────────────────────
+// GAME STATE
+// ─────────────────────────────────────────────────────────────
+let G = {
+  mode: 'teams',
+  entities: [],     // [{name, members:[]}]
+  rounds: [],       // each round: [{bid, tricks, nilType, nilTricks, score, bags, total, notes}] per entity
+  totals: [],
+  bags: [],
+  totalRounds: 13,
+  bagLimit: 10,
+  gameOver: false
+};
+
+// ─────────────────────────────────────────────────────────────
+// SCREEN NAV
+// ─────────────────────────────────────────────────────────────
+function goTo(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+// ─────────────────────────────────────────────────────────────
+// SCREEN 1 · MODE
+// ─────────────────────────────────────────────────────────────
+function selectMode(mode) {
+  setup.mode = mode;
+  document.querySelectorAll('.mode-card').forEach(c => c.classList.remove('selected'));
+  document.getElementById('modeCard' + (mode === 'individual' ? 'Individual' : 'Teams')).classList.add('selected');
+
+  buildCountGrid(mode);
+  setTimeout(() => goTo('screenCount'), 150);
+}
+
+// ─────────────────────────────────────────────────────────────
+// SCREEN 2 · COUNT
+// ─────────────────────────────────────────────────────────────
+function buildCountGrid(mode) {
+  const grid = document.getElementById('countGrid');
+  const title = document.getElementById('countTitle');
+  const sub   = document.getElementById('countSub');
+
+  if (mode === 'individual') {
+    title.textContent = 'How many players?';
+    sub.textContent = '2 to 8 players';
+    const options = [2, 3, 4, 5, 6, 7, 8];
+    grid.innerHTML = options.map(n =>
+      `<button class="count-btn ${n===4?'selected':''}" onclick="selectCount(${n},this)">
+        ${n}<span>player${n>1?'s':''}</span>
+      </button>`
+    ).join('');
+    setup.count = 4;
+  } else {
+    title.textContent = 'How many teams?';
+    sub.textContent = '2 to 6 teams';
+    const options = [2, 3, 4, 5, 6];
+    grid.innerHTML = options.map(n =>
+      `<button class="count-btn ${n===2?'selected':''}" onclick="selectCount(${n},this)">
+        ${n}<span>team${n>1?'s':''}</span>
+      </button>`
+    ).join('');
+    setup.count = 2;
+  }
+}
+
+function selectCount(n, el) {
+  setup.count = n;
+  document.querySelectorAll('.count-btn').forEach(b => b.classList.remove('selected'));
+  el.classList.add('selected');
+  buildNamesScreen();
+  setTimeout(() => goTo('screenNames'), 150);
+}
+
+// ─────────────────────────────────────────────────────────────
+// SCREEN 3 · NAMES
+// ─────────────────────────────────────────────────────────────
+function buildNamesScreen() {
+  const list  = document.getElementById('namesList');
+  const title = document.getElementById('namesTitle');
+  list.innerHTML = '';
+
+  if (setup.mode === 'individual') {
+    title.textContent = 'Enter player names';
+    for (let i = 0; i < setup.count; i++) {
+      const div = document.createElement('div');
+      div.className = 'name-group';
+      div.innerHTML = `
+        <div class="name-group-header">
+          <div class="group-badge">${i+1}</div> Player ${i+1}
+        </div>
+        <div class="name-input-row">
+          <input type="text" class="player-name-input" placeholder="Name" maxlength="18"
+            value="" data-idx="${i}" />
+        </div>`;
+      list.appendChild(div);
+    }
+  } else {
+    title.textContent = 'Enter team & player names';
+    for (let t = 0; t < setup.count; t++) {
+      const div = document.createElement('div');
+      div.className = 'name-group';
+      const memberFields = [1, 2].map(m =>
+        `<div class="name-input-row">
+          <span class="row-label">Player ${m}</span>
+          <input type="text" class="member-name-input" placeholder="Name (optional)" maxlength="16"
+            data-team="${t}" data-member="${m-1}" />
+        </div>`
+      ).join('');
+      div.innerHTML = `
+        <div class="name-group-header">
+          <div class="group-badge">${t+1}</div> Team ${t+1}
+        </div>
+        <div class="name-input-row">
+          <span class="row-label">Team Name</span>
+          <input type="text" class="team-name-input" placeholder="Team ${t+1}" maxlength="16"
+            data-team="${t}" />
+        </div>
+        ${memberFields}`;
+      list.appendChild(div);
+    }
+  }
+}
+
+function goToSettings() {
+  collectNames();
+  goTo('screenSettings');
+}
+
+function collectNames() {
+  setup.entities = [];
+  if (setup.mode === 'individual') {
+    document.querySelectorAll('.player-name-input').forEach((inp, i) => {
+      setup.entities.push({ name: inp.value.trim() || `Player ${i+1}`, members: [] });
+    });
+  } else {
+    for (let t = 0; t < setup.count; t++) {
+      const nameEl = document.querySelector(`.team-name-input[data-team="${t}"]`);
+      const teamName = nameEl?.value.trim() || `Team ${t+1}`;
+      const members = [];
+      document.querySelectorAll(`.member-name-input[data-team="${t}"]`).forEach((el, m) => {
+        const v = el.value.trim();
+        if (v) members.push(v);
+      });
+      setup.entities.push({ name: teamName, members });
+    }
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// START GAME
+// ─────────────────────────────────────────────────────────────
+function startGame() {
+  const totalRounds = parseInt(document.getElementById('cfgRounds').value) || 13;
+  const bagLimit = parseInt(document.getElementById('cfgBagLimit').value) || 10;
+
+  G = {
+    mode: setup.mode,
+    entities: JSON.parse(JSON.stringify(setup.entities)),
+    rounds: [],
+    totals: new Array(setup.count).fill(0),
+    bags: new Array(setup.count).fill(0),
+    totalRounds,
+    bagLimit,
+    gameOver: false
+  };
+
+  saveState();
+  buildGameUI();
+  goTo('gameScreen');
+}
+
+// ─────────────────────────────────────────────────────────────
+// BUILD GAME UI
+// ─────────────────────────────────────────────────────────────
+function buildGameUI() {
+  buildEntryRows();
+  renderGame();
+}
+
+function buildEntryRows() {
+  const container = document.getElementById('entryRows');
+  container.innerHTML = '';
+
+  G.entities.forEach((entity, i) => {
+    const isTeam = G.mode === 'teams';
+    const membersLabel = entity.members.length ? entity.members.join(' & ') : '';
+
+    // Nil options
+    let nilOptions = `<option value="none">None</option>`;
+    if (isTeam && entity.members.length >= 1) {
+      const m1 = entity.members[0] || 'Player 1';
+      const m2 = entity.members[1] || 'Player 2';
+      nilOptions += `<option value="nil_0">${m1} — Nil</option>`;
+      nilOptions += `<option value="nil_1">${m2} — Nil</option>`;
+      nilOptions += `<option value="nil_both">Both — Nil</option>`;
+      nilOptions += `<option value="bnil_0">${m1} — Blind Nil</option>`;
+      nilOptions += `<option value="bnil_1">${m2} — Blind Nil</option>`;
+    } else if (isTeam) {
+      nilOptions += `<option value="nil_0">Nil</option>`;
+      nilOptions += `<option value="bnil_0">Blind Nil</option>`;
+    } else {
+      // individual
+      nilOptions += `<option value="nil_0">Nil</option>`;
+      nilOptions += `<option value="bnil_0">Blind Nil</option>`;
+    }
+
+    const row = document.createElement('div');
+    row.className = 'player-entry-row';
+    row.dataset.idx = i;
+    row.innerHTML = `
+      <div class="per-name">
+        ${entity.name}
+        ${membersLabel ? `<span class="badge">${membersLabel}</span>` : ''}
+      </div>
+      <div class="input-row">
+        <div class="input-group">
+          <label>Bid</label>
+          <div class="num-input">
+            <button type="button" onclick="nudge(this,-1)">&#8722;</button>
+            <input type="number" class="bid-input" min="0" max="13" value="0" inputmode="numeric" />
+            <button type="button" onclick="nudge(this,1)">&#43;</button>
+          </div>
+        </div>
+        <div class="input-group">
+          <label>Tricks Won</label>
+          <div class="num-input">
+            <button type="button" onclick="nudge(this,-1)">&#8722;</button>
+            <input type="number" class="tricks-input" min="0" max="13" value="0" inputmode="numeric" />
+            <button type="button" onclick="nudge(this,1)">&#43;</button>
+          </div>
+        </div>
+      </div>
+      <div class="nil-row">
+        <label>Nil bid</label>
+        <select class="nil-select" onchange="toggleNilTricks(this, ${i})">${nilOptions}</select>
+      </div>
+      <div class="nil-tricks-row" id="nilTricksRow${i}">
+        <label>Nil player tricks</label>
+        <div class="num-input" style="max-width:130px">
+          <button type="button" onclick="nudge(this,-1)">&#8722;</button>
+          <input type="number" class="nil-tricks-input" min="0" max="13" value="0" inputmode="numeric" />
+          <button type="button" onclick="nudge(this,1)">&#43;</button>
+        </div>
+      </div>`;
+    container.appendChild(row);
+  });
+}
+
+function nudge(btn, delta) {
+  const input = btn.parentElement.querySelector('input');
+  const val = parseInt(input.value) || 0;
+  const min = parseInt(input.min) || 0;
+  const max = parseInt(input.max) || 99;
+  input.value = Math.max(min, Math.min(max, val + delta));
+}
+
+function toggleNilTricks(sel, idx) {
+  const row = document.getElementById(`nilTricksRow${idx}`);
+  row.style.display = sel.value !== 'none' ? 'flex' : 'none';
+}
+
+// ─────────────────────────────────────────────────────────────
+// SCORING
+// ─────────────────────────────────────────────────────────────
+function calcScore(bid, tricks, nilType, nilTricks) {
+  let score = 0, bags = 0;
+  const notes = [];
+
+  if (nilType !== 'none') {
+    const isBlind = nilType.startsWith('bnil');
+    const nilVal  = isBlind ? 200 : 100;
+    const isBoth  = nilType.endsWith('both');
+    const mult    = isBoth ? 2 : 1;
+    const made    = nilTricks === 0;
+    const label   = (isBlind ? 'Blind Nil' : 'Nil') + (isBoth ? ' (both)' : '');
+    score += made ? nilVal * mult : -(nilVal * mult);
+    notes.push(made ? `${label} made (+${nilVal * mult})` : `${label} failed (-${nilVal * mult})`);
+  }
+
+  if (bid > 0) {
+    if (tricks >= bid) {
+      score += bid * 10;
+      const over = tricks - bid;
+      bags = over;
+      score += over;
+      if (over > 0) notes.push(`${over} bag${over > 1 ? 's' : ''}`);
+    } else {
+      score -= bid * 10;
+      notes.push(`Set! (-${bid * 10})`);
+    }
+  }
+
+  return { score, bags, notes: notes.join(', ') };
+}
+
+function addRound() {
+  if (G.gameOver) { alert('Game over! Start a new game.'); return; }
+
+  const rows = document.querySelectorAll('.player-entry-row');
+  const roundData = [];
+
+  rows.forEach((row, i) => {
+    const bid       = parseInt(row.querySelector('.bid-input').value) || 0;
+    const tricks    = parseInt(row.querySelector('.tricks-input').value) || 0;
+    const nilSel    = row.querySelector('.nil-select').value;
+    const nilTricks = nilSel !== 'none'
+      ? (parseInt(row.querySelector('.nil-tricks-input').value) || 0) : 0;
+
+    const { score: rawScore, bags: newBags, notes } = calcScore(bid, tricks, nilSel, nilTricks);
+
+    let bagTotal = G.bags[i] + newBags;
+    let bagPenalty = 0;
+    while (bagTotal >= G.bagLimit) {
+      bagTotal -= G.bagLimit;
+      bagPenalty -= 100;
+    }
+    G.bags[i] = bagTotal;
+    G.totals[i] += rawScore + bagPenalty;
+
+    const allNotes = notes + (bagPenalty < 0 ? (notes ? ', ' : '') + `Bag penalty (${bagPenalty})` : '');
+
+    roundData.push({
+      bid, tricks, nilSel, nilTricks,
+      score: rawScore + bagPenalty,
+      bags: G.bags[i],
+      total: G.totals[i],
+      notes: allNotes
+    });
+  });
+
+  G.rounds.push(roundData);
+  saveState();
+  renderGame();
+  resetInputs();
+  checkWin();
+}
+
+function undoRound() {
+  if (G.rounds.length === 0) return;
+  const last = G.rounds.pop();
+  last.forEach((r, i) => {
+    G.totals[i] -= r.score;
+    G.bags[i] = G.rounds.length > 0 ? G.rounds[G.rounds.length-1][i].bags : 0;
+  });
+  G.gameOver = false;
+  document.getElementById('winnerBanner').style.display = 'none';
+  document.getElementById('winnerOverlay').classList.remove('open');
+  stopConfetti();
+  saveState();
+  renderGame();
+}
+
+function resetInputs() {
+  document.querySelectorAll('.bid-input, .tricks-input, .nil-tricks-input').forEach(el => el.value = 0);
+  document.querySelectorAll('.nil-select').forEach(sel => {
+    sel.value = 'none';
+    sel.dispatchEvent(new Event('change'));
+  });
+  // re-hide nil tricks rows
+  G.entities.forEach((_, i) => {
+    const r = document.getElementById(`nilTricksRow${i}`);
+    if (r) r.style.display = 'none';
+  });
+}
+
+function checkWin() {
+  if (G.rounds.length < G.totalRounds) return;
+
+  const max = Math.max(...G.totals);
+  const isTie = G.totals.filter(t => t === max).length > 1;
+  const popupContent = document.getElementById('winnerPopupContent');
+
+  if (isTie) {
+    popupContent.innerHTML = `
+      <div class="tie-text">It's a Tie!</div>
+      <div class="winner-score">After ${G.totalRounds} rounds · ${max} pts each</div>`;
+  } else {
+    const winner = G.entities[G.totals.indexOf(max)];
+    popupContent.innerHTML = `
+      <div class="winner-label">Winner</div>
+      <div class="winner-name">${winner.name}</div>
+      <div class="winner-score">${max} points · ${G.totalRounds} rounds</div>`;
+    G.gameOver = true;
+    saveState();
+    launchConfetti();
+  }
+
+  document.getElementById('winnerOverlay').classList.add('open');
+}
+
+// ─────────────────────────────────────────────────────────────
+// RENDER
+// ─────────────────────────────────────────────────────────────
+function renderGame() {
+  renderScoreStrip();
+  renderHistory();
+  document.getElementById('roundNum').textContent = G.rounds.length + 1;
+  document.getElementById('totalRoundsDisplay').textContent = G.totalRounds;
+  document.getElementById('gameSettingsInfo').textContent =
+    `Round ${G.rounds.length}/${G.totalRounds} · Bags: ${G.bagLimit}`;
+  document.getElementById('historyCount').textContent =
+    G.rounds.length > 0 ? `${G.rounds.length} round${G.rounds.length > 1 ? 's' : ''}` : '';
+}
+
+function renderScoreStrip() {
+  const strip = document.getElementById('scoreStrip');
+  const maxTotal = Math.max(...G.totals);
+
+  strip.innerHTML = G.entities.map((e, i) => {
+    const isLeading = G.totals[i] === maxTotal && maxTotal > 0;
+    const membersHtml = e.members.length
+      ? `<div class="sc-members">${e.members.join(' · ')}</div>` : '';
+    return `<div class="score-card ${isLeading ? 'leading' : ''}">
+      <div class="sc-name">${e.name}</div>
+      ${membersHtml}
+      <div class="sc-total">${G.totals[i]}</div>
+      <div class="sc-bags">Bags: <span>${G.bags[i]}</span></div>
+    </div>`;
+  }).join('');
+}
+
+function renderHistory() {
+  const body = document.getElementById('historyBody');
+  if (G.rounds.length === 0) {
+    body.innerHTML = '<div class="empty-state">No rounds yet — add the first one above.</div>';
+    return;
+  }
+
+  const headers = G.entities.map(e => `<th colspan="3">${e.name}</th>`).join('');
+  const subHeaders = G.entities.map(() => `<th>Bid</th><th>Got</th><th>Score</th>`).join('');
+
+  let rows = '';
+  G.rounds.forEach((round, idx) => {
+    const cells = round.map(r => {
+      const cls = r.score >= 0 ? 'pos' : 'neg';
+      return `<td>${r.bid}</td><td>${r.tricks}</td>
+              <td class="td-score ${cls}">${r.score >= 0 ? '+' : ''}${r.score}</td>`;
+    }).join('');
+    rows += `<tr><td class="td-round">${idx+1}</td>${cells}</tr>`;
+
+    // running totals row
+    const totals = round.map(r => `<td colspan="3" class="td-total">${r.total}</td>`).join('');
+    rows += `<tr style="background:#12122a"><td class="td-round"></td>${totals}</tr>`;
+
+    // notes
+    const hasNotes = round.some(r => r.notes);
+    if (hasNotes) {
+      const noteCells = round.map(r =>
+        `<td colspan="3" class="td-note">${r.notes || ''}</td>`
+      ).join('');
+      rows += `<tr><td></td>${noteCells}</tr>`;
+    }
+  });
+
+  body.innerHTML = `<table>
+    <thead>
+      <tr><th>#</th>${headers}</tr>
+      <tr><th></th>${subHeaders}</tr>
+    </thead>
+    <tbody>${rows}</tbody>
+  </table>`;
+}
+
+// ─────────────────────────────────────────────────────────────
+// IN-GAME ACTIONS
+// ─────────────────────────────────────────────────────────────
+function confirmNewGame() {
+  if (!confirm('Start a new game? All scores will be reset.')) return;
+  document.getElementById('winnerOverlay').classList.remove('open');
+  stopConfetti();
+  localStorage.removeItem('spades_g');
+  // go back to setup
+  document.querySelectorAll('.mode-card').forEach(c => c.classList.remove('selected'));
+  goTo('screenMode');
+}
+
+function openSettings() {
+  document.getElementById('liveRounds').value = G.totalRounds;
+  document.getElementById('liveBagLimit').value = G.bagLimit;
+  document.getElementById('settingsOverlay').classList.add('open');
+}
+
+function saveGameSettings() {
+  G.totalRounds = parseInt(document.getElementById('liveRounds').value) || 13;
+  G.bagLimit = parseInt(document.getElementById('liveBagLimit').value) || 10;
+  saveState();
+  renderGame();
+  closeOverlay('settingsOverlay');
+}
+
+function closeOverlay(id) {
+  document.getElementById(id).classList.remove('open');
+}
+
+document.getElementById('settingsOverlay').addEventListener('click', function(e) {
+  if (e.target === this) closeOverlay('settingsOverlay');
+});
+
+// ─────────────────────────────────────────────────────────────
+// PERSISTENCE
+// ─────────────────────────────────────────────────────────────
+function saveState() {
+  try { localStorage.setItem('spades_g', JSON.stringify(G)); } catch(e) {}
+}
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem('spades_g');
+    if (!raw) return false;
+    G = JSON.parse(raw);
+    return true;
+  } catch(e) { return false; }
+}
+
+// ─────────────────────────────────────────────────────────────
+// INIT
+// ─────────────────────────────────────────────────────────────
+if (loadState() && G.entities && G.entities.length > 0) {
+  buildGameUI();
+  goTo('gameScreen');
+  if (G.gameOver) {
+    const max = Math.max(...G.totals);
+    const winner = G.entities[G.totals.indexOf(max)];
+    const banner = document.getElementById('winnerBanner');
+    banner.textContent = `${winner.name} wins with ${max} pts! \uD83C\uDF89`;
+    banner.style.display = 'block';
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// CONFETTI
+// ─────────────────────────────────────────────────────────────
+(function() {
+  const COLORS = [
+    '#e94560','#4a9eff','#f5a623','#27ae60',
+    '#9b59b6','#1abc9c','#f39c12','#e74c3c',
+    '#ffffff','#ffd700'
+  ];
+
+  let canvas, ctx, particles = [], animId = null;
+
+  function initCanvas() {
+    canvas = document.getElementById('confettiCanvas');
+    ctx = canvas.getContext('2d');
+  }
+
+  function resize() {
+    canvas.width  = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
+
+  function Particle() { this.reset(true); }
+
+  Particle.prototype.reset = function(fromTop) {
+    this.x    = Math.random() * canvas.width;
+    this.y    = fromTop ? Math.random() * -canvas.height * 0.5 : -12;
+    this.w    = 7 + Math.random() * 8;
+    this.h    = 4 + Math.random() * 5;
+    this.color = COLORS[Math.floor(Math.random() * COLORS.length)];
+    this.vx   = (Math.random() - 0.5) * 3;
+    this.vy   = 2.5 + Math.random() * 3.5;
+    this.angle = Math.random() * Math.PI * 2;
+    this.spin  = (Math.random() - 0.5) * 0.18;
+    this.wobble = Math.random() * Math.PI * 2;
+    this.wobbleSpeed = 0.06 + Math.random() * 0.05;
+    this.opacity = 1;
+    this.shape = Math.random() < 0.4 ? 'circle' : 'rect';
+  };
+
+  Particle.prototype.update = function() {
+    this.wobble += this.wobbleSpeed;
+    this.x  += this.vx + Math.sin(this.wobble) * 0.8;
+    this.y  += this.vy;
+    this.angle += this.spin;
+    this.vy += 0.04;
+    if (this.y > canvas.height + 20) this.reset(false);
+  };
+
+  Particle.prototype.draw = function() {
+    ctx.save();
+    ctx.globalAlpha = this.opacity;
+    ctx.translate(this.x, this.y);
+    ctx.rotate(this.angle);
+    ctx.fillStyle = this.color;
+    if (this.shape === 'circle') {
+      ctx.beginPath();
+      ctx.arc(0, 0, this.w / 2, 0, Math.PI * 2);
+      ctx.fill();
+    } else {
+      ctx.fillRect(-this.w / 2, -this.h / 2, this.w, this.h);
+    }
+    ctx.restore();
+  };
+
+  function loop() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    particles.forEach(p => { p.update(); p.draw(); });
+    animId = requestAnimationFrame(loop);
+  }
+
+  window.launchConfetti = function() {
+    if (!canvas) initCanvas();
+    canvas.style.display = 'block';
+    resize();
+    particles = Array.from({ length: 160 }, () => new Particle());
+    if (animId) cancelAnimationFrame(animId);
+    loop();
+    setTimeout(() => { particles.forEach(p => { p.vy = 99; }); }, 4000);
+    setTimeout(stopConfetti, 6000);
+  };
+
+  window.stopConfetti = function() {
+    if (animId) { cancelAnimationFrame(animId); animId = null; }
+    if (canvas) { ctx.clearRect(0, 0, canvas.width, canvas.height); canvas.style.display = 'none'; }
+    particles = [];
+  };
+
+  window.addEventListener('resize', () => { if (canvas && canvas.style.display !== 'none') resize(); });
+})();
+</script>
+
+<canvas id="confettiCanvas"></canvas>
+</body>
+</html>

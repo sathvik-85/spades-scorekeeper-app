@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>Input Demo</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -57,8 +57,8 @@
 
     /* +/- buttons */
     .pm-btn {
-      width: 36px;
-      height: 36px;
+      width: 44px;
+      height: 44px;
       border-radius: 8px;
       background: #252545;
       border: none;
@@ -71,6 +71,7 @@
       flex-shrink: 0;
       transition: background 0.1s, color 0.1s, transform 0.08s;
       -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
       font-family: inherit;
     }
 

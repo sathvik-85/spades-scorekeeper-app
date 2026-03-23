@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>Number Pad Demo</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: #0d0d1a;
+      color: #eee;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      gap: 20px;
+    }
+
+    h2 { font-size: 1rem; color: #7070a0; text-transform: uppercase; letter-spacing: 1px; }
+
+    /* ── FIELD ── */
+    .demo-fields {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      width: 100%;
+      max-width: 320px;
+    }
+
+    .field-group { display: flex; flex-direction: column; gap: 6px; }
+
+    .field-label {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: #7070a0;
+    }
+
+    .num-field {
+      background: #161628;
+      border: 2px solid #252545;
+      border-radius: 12px;
+      padding: 16px;
+      text-align: center;
+      font-size: 2rem;
+      font-weight: 800;
+      color: #fff;
+      cursor: pointer;
+      transition: border-color 0.15s;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .num-field:active, .num-field.active { border-color: #e94560; color: #e94560; }
+
+    /* ── NUMPAD OVERLAY ── */
+    .numpad-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      z-index: 100;
+      align-items: flex-end;
+      justify-content: center;
+    }
+
+    .numpad-overlay.open { display: flex; }
+
+    .numpad-sheet {
+      background: #161628;
+      border-radius: 24px 24px 0 0;
+      border: 1px solid #252545;
+      border-bottom: none;
+      width: 100%;
+      max-width: 420px;
+      padding: 16px 16px 32px;
+      animation: slideUp 0.22s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    }
+
+    @keyframes slideUp {
+      from { transform: translateY(100%); }
+      to   { transform: translateY(0); }
+    }
+
+    .numpad-handle {
+      width: 40px;
+      height: 4px;
+      background: #252545;
+      border-radius: 2px;
+      margin: 0 auto 16px;
+    }
+
+    .numpad-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+      padding: 0 4px;
+    }
+
+    .numpad-title {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #7070a0;
+    }
+
+    .numpad-display {
+      font-size: 2rem;
+      font-weight: 800;
+      color: #e94560;
+      min-width: 40px;
+      text-align: right;
+    }
+
+    .numpad-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+    }
+
+    .np-btn {
+      background: #252545;
+      border: none;
+      border-radius: 12px;
+      color: #fff;
+      font-size: 1.3rem;
+      font-weight: 700;
+      height: 60px;
+      cursor: pointer;
+      transition: background 0.1s, transform 0.08s;
+      font-family: inherit;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .np-btn:active { background: #353565; transform: scale(0.93); }
+
+    .np-btn.selected {
+      background: #e94560;
+      color: #fff;
+    }
+
+    .np-btn.confirm {
+      background: #e94560;
+      color: #fff;
+      font-size: 1rem;
+      letter-spacing: 0.5px;
+    }
+
+    .np-btn.confirm:active { background: #c73a52; }
+
+    .np-btn.nil-val {
+      background: #1a1a35;
+      color: #7070a0;
+      font-size: 0.75rem;
+      letter-spacing: 0.3px;
+    }
+  </style>
+</head>
+<body>
+
+<h2>Tap a field</h2>
+
+<div class="demo-fields">
+  <div class="field-group">
+    <div class="field-label">Bid</div>
+    <div class="num-field" onclick="openPad('Bid', this)">0</div>
+  </div>
+  <div class="field-group">
+    <div class="field-label">Tricks Won</div>
+    <div class="num-field" onclick="openPad('Tricks Won', this)">0</div>
+  </div>
+</div>
+
+<!-- Numpad -->
+<div class="numpad-overlay" id="numpadOverlay" onclick="handleOverlayClick(event)">
+  <div class="numpad-sheet">
+    <div class="numpad-handle"></div>
+    <div class="numpad-header">
+      <span class="numpad-title" id="numpadTitle">Bid</span>
+      <span class="numpad-display" id="numpadDisplay">0</span>
+    </div>
+    <div class="numpad-grid" id="numpadGrid"></div>
+  </div>
+</div>
+
+<script>
+  let activeField = null;
+  let selectedVal = 0;
+
+  function buildGrid(current) {
+    const grid = document.getElementById('numpadGrid');
+    grid.innerHTML = '';
+    // 0–13 = 14 values, fill to 16 with Nil + Done
+    for (let i = 0; i <= 13; i++) {
+      const btn = document.createElement('button');
+      btn.className = 'np-btn' + (i === current ? ' selected' : '');
+      btn.textContent = i;
+      btn.onclick = () => selectVal(i);
+      grid.appendChild(btn);
+    }
+    // slot 14: Nil shortcut
+    const nilBtn = document.createElement('button');
+    nilBtn.className = 'np-btn nil-val';
+    nilBtn.textContent = 'Nil (0)';
+    nilBtn.onclick = () => selectVal(0);
+    grid.appendChild(nilBtn);
+
+    // slot 15: Done
+    const doneBtn = document.createElement('button');
+    doneBtn.className = 'np-btn confirm';
+    doneBtn.textContent = 'Done ✓';
+    doneBtn.onclick = confirm;
+    grid.appendChild(doneBtn);
+  }
+
+  function selectVal(v) {
+    selectedVal = v;
+    document.getElementById('numpadDisplay').textContent = v;
+    document.querySelectorAll('.np-btn').forEach(b => {
+      b.classList.toggle('selected', b.textContent == v && !b.classList.contains('nil-val') && !b.classList.contains('confirm'));
+    });
+  }
+
+  function openPad(label, fieldEl) {
+    activeField = fieldEl;
+    selectedVal = parseInt(fieldEl.textContent) || 0;
+    document.getElementById('numpadTitle').textContent = label;
+    document.getElementById('numpadDisplay').textContent = selectedVal;
+    buildGrid(selectedVal);
+    document.getElementById('numpadOverlay').classList.add('open');
+    fieldEl.classList.add('active');
+  }
+
+  function confirm() {
+    if (activeField) {
+      activeField.textContent = selectedVal;
+      activeField.classList.remove('active');
+    }
+    document.getElementById('numpadOverlay').classList.remove('open');
+    activeField = null;
+  }
+
+  function handleOverlayClick(e) {
+    if (e.target === document.getElementById('numpadOverlay')) confirm();
+  }
+</script>
+</body>
+</html>

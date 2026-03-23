@@ -720,6 +720,98 @@
 
     /* Divider */
     .section-gap { height: 24px; }
+
+    /* ── WELCOME SCREEN ─────────────────────── */
+    .welcome-hero {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: calc(100dvh - 53px);
+      text-align: center;
+      padding: 32px 24px 48px;
+    }
+
+    .welcome-suits {
+      font-size: 3.5rem;
+      letter-spacing: 8px;
+      margin-bottom: 24px;
+      animation: suitsDrop 0.6s ease both;
+    }
+
+    @keyframes suitsDrop {
+      from { opacity: 0; transform: translateY(-20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .welcome-title {
+      font-size: 2.6rem;
+      font-weight: 800;
+      color: #fff;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+      animation: fadeUp 0.5s ease 0.15s both;
+    }
+
+    .welcome-title span { color: var(--accent); }
+
+    .welcome-tagline {
+      font-size: 1rem;
+      color: var(--muted);
+      margin-bottom: 48px;
+      line-height: 1.5;
+      animation: fadeUp 0.5s ease 0.25s both;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .welcome-features {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      width: 100%;
+      max-width: 320px;
+      margin-bottom: 48px;
+      animation: fadeUp 0.5s ease 0.35s both;
+    }
+
+    .welcome-feature {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 16px;
+      text-align: left;
+    }
+
+    .welcome-feature .feat-icon {
+      font-size: 1.5rem;
+      width: 40px;
+      flex-shrink: 0;
+      text-align: center;
+    }
+
+    .welcome-feature .feat-text { font-size: 0.88rem; color: var(--muted); line-height: 1.4; }
+    .welcome-feature .feat-text strong { color: var(--text); display: block; margin-bottom: 1px; }
+
+    .welcome-cta {
+      width: 100%;
+      max-width: 320px;
+      animation: fadeUp 0.5s ease 0.45s both;
+    }
+
+    .btn-welcome {
+      font-size: 1.1rem;
+      padding: 18px 24px;
+      border-radius: 14px;
+      letter-spacing: 1px;
+    }
   </style>
 </head>
 <body>
@@ -730,9 +822,50 @@
 </header>
 
 <!-- ══════════════════════════════════════════
+     SCREEN 0 · WELCOME
+══════════════════════════════════════════ -->
+<div class="screen active" id="screenWelcome">
+  <div class="welcome-hero">
+    <div class="welcome-suits">&#9824;&#9827;&#9829;&#9830;</div>
+    <h1 class="welcome-title"><span>Spades</span> Score</h1>
+    <p class="welcome-tagline">Track bids, tricks, and bags.<br>Keep the game honest.</p>
+
+    <div class="welcome-features">
+      <div class="welcome-feature">
+        <div class="feat-icon">&#128101;</div>
+        <div class="feat-text">
+          <strong>Teams or Individual</strong>
+          Up to 6 teams or 8 players with custom names
+        </div>
+      </div>
+      <div class="welcome-feature">
+        <div class="feat-icon">&#127183;</div>
+        <div class="feat-text">
+          <strong>Auto Scoring</strong>
+          Bids, overtricks, bags, nil &amp; blind nil — all calculated
+        </div>
+      </div>
+      <div class="welcome-feature">
+        <div class="feat-icon">&#128196;</div>
+        <div class="feat-text">
+          <strong>Round History</strong>
+          Full log of every round with running totals
+        </div>
+      </div>
+    </div>
+
+    <div class="welcome-cta">
+      <button class="btn btn-primary btn-welcome" onclick="goTo('screenMode')">
+        Let's Play &#9824;
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
      SCREEN 1 · MODE
 ══════════════════════════════════════════ -->
-<div class="screen active" id="screenMode">
+<div class="screen" id="screenMode">
   <div class="progress">
     <div class="progress-dot active"></div>
     <div class="progress-dot"></div>
